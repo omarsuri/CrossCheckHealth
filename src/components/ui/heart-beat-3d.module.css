@@ -1,0 +1,79 @@
+.scene {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  perspective: 900px;
+}
+
+/* ── Heart container: fixed 3D angle + beat ── */
+.heart {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  transform-style: preserve-3d;
+  animation: beat 1.3s ease-in-out infinite;
+}
+
+/* lub-dub (double-beat) rhythm */
+@keyframes beat {
+  0%   { transform: rotateY(28deg) rotateX(-16deg) scale3d(1,    1,    1   ); }
+  12%  { transform: rotateY(28deg) rotateX(-16deg) scale3d(1.13, 1.13, 1.13); }
+  24%  { transform: rotateY(28deg) rotateX(-16deg) scale3d(0.96, 0.96, 0.96); }
+  36%  { transform: rotateY(28deg) rotateX(-16deg) scale3d(1.09, 1.09, 1.09); }
+  60%  { transform: rotateY(28deg) rotateX(-16deg) scale3d(1,    1,    1   ); }
+  100% { transform: rotateY(28deg) rotateX(-16deg) scale3d(1,    1,    1   ); }
+}
+
+/* ── Each slice — heart path fitted to 240×240 ── */
+.layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  clip-path: path('M 120 219 C 34 164 10 109 10 75 C 10 31 41 7 77 7 C 100 7 117 26 120 46 C 123 26 140 7 164 7 C 199 7 230 31 230 75 C 230 109 206 164 120 219 Z');
+}
+
+/* Slices: front (bright) → back (dark) */
+.layer:nth-child(1) {
+  transform: translateZ(40px);
+  background: linear-gradient(135deg, #ffb3c1 0%, #ff4d6d 45%, #c9184a 100%);
+}
+.layer:nth-child(2) { transform: translateZ(29px);  background: #f43f5e; }
+.layer:nth-child(3) { transform: translateZ(18px);  background: #e02d52; }
+.layer:nth-child(4) { transform: translateZ(7px);   background: #cc1f47; }
+.layer:nth-child(5) { transform: translateZ(-4px);  background: #b5143c; }
+.layer:nth-child(6) { transform: translateZ(-15px); background: #9d0932; }
+.layer:nth-child(7) { transform: translateZ(-26px); background: #800028; }
+.layer:nth-child(8) { transform: translateZ(-37px); background: #62001e; }
+
+/* Gloss highlight — sits just above the front face */
+.shine {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform: translateZ(41px);
+  clip-path: path('M 120 219 C 34 164 10 109 10 75 C 10 31 41 7 77 7 C 100 7 117 26 120 46 C 123 26 140 7 164 7 C 199 7 230 31 230 75 C 230 109 206 164 120 219 Z');
+  background: radial-gradient(ellipse at 32% 22%, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 58%);
+  pointer-events: none;
+}
+
+/* ── Ground shadow ── */
+.shadow {
+  width: 200px;
+  height: 22px;
+  margin-top: 16px;
+  background: radial-gradient(ellipse, rgba(244, 63, 94, 0.30) 0%, transparent 70%);
+  filter: blur(10px);
+  animation: shadow-beat 1.3s ease-in-out infinite;
+}
+
+@keyframes shadow-beat {
+  0%   { transform: scale(1);    opacity: 0.55; }
+  12%  { transform: scale(1.13); opacity: 0.75; }
+  24%  { transform: scale(0.96); opacity: 0.45; }
+  36%  { transform: scale(1.09); opacity: 0.65; }
+  60%  { transform: scale(1);    opacity: 0.55; }
+  100% { transform: scale(1);    opacity: 0.55; }
+}
