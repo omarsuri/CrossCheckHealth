@@ -1,0 +1,43 @@
+export const BODY_FITNESS_STEPS: any[] = [
+  { id: "goal", title: "What's your goal?", subtitle: "We'll personalize your entire experience", type: "choice",
+    options: [
+      { value: "lose_fat", label: "Lose Fat", icon: "🔥", desc: "Reduce body fat while preserving muscle" },
+      { value: "gain_muscle", label: "Build Muscle", icon: "💪", desc: "Lean mass gain with minimal fat" },
+      { value: "recomp", label: "Body Recomposition", icon: "⚡", desc: "Lose fat and gain muscle simultaneously" },
+      { value: "maintain", label: "Maintain & Optimize", icon: "✨", desc: "Improve health markers at current weight" },
+    ] },
+  { id: "sex", title: "Your biological sex", subtitle: "Used for metabolic calculations", type: "choice",
+    options: [{ value: "male", label: "Male", icon: "👨" }, { value: "female", label: "Female", icon: "👩" }] },
+  { id: "age", title: "How old are you?", subtitle: "Age affects metabolic rate", type: "number", min: 18, max: 80, step: 1, unit: "years", default: 28 },
+  { id: "height", title: "Your height", subtitle: "Used in metabolic equations", type: "number", min: 140, max: 220, step: 1, unit: "cm", default: 175 },
+  { id: "weight", title: "Current weight", subtitle: "Be honest for best accuracy", type: "number", min: 40, max: 200, step: 1, unit: "kg", default: 78 },
+  { id: "waist", title: "Waist circumference", subtitle: "Estimate at navel level", type: "number", min: 50, max: 150, step: 1, unit: "cm", default: 84 },
+  { id: "activity", title: "Activity level", subtitle: "Your typical daily movement", type: "choice",
+    options: [
+      { value: 1.2, label: "Sedentary", icon: "🛋️", desc: "Desk job, little exercise" },
+      { value: 1.375, label: "Lightly Active", icon: "🚶", desc: "1-3 days/week light exercise" },
+      { value: 1.55, label: "Moderately Active", icon: "🏃", desc: "3-5 days/week moderate exercise" },
+      { value: 1.725, label: "Very Active", icon: "🔥", desc: "6-7 days/week hard exercise" },
+    ] },
+  { id: "workout_freq", title: "Weekly workouts", subtitle: "Strength or cardio sessions", type: "choice",
+    options: [
+      { value: 0, label: "None yet", icon: "0️⃣" },
+      { value: 2, label: "1-2 times", icon: "2️⃣" },
+      { value: 4, label: "3-4 times", icon: "4️⃣" },
+      { value: 6, label: "5+ times", icon: "6️⃣" },
+    ] },
+  { id: "sleep", title: "Sleep per night", subtitle: "Average hours", type: "choice",
+    options: [
+      { value: 5, label: "< 6 hours", icon: "😴", desc: "Sleep deprived" },
+      { value: 6.5, label: "6-7 hours", icon: "🌙", desc: "Could improve" },
+      { value: 7.5, label: "7-8 hours", icon: "✨", desc: "Optimal range" },
+      { value: 9, label: "8+ hours", icon: "🌟", desc: "Excellent" },
+    ] },
+  { id: "timeline", title: "Target timeline", subtitle: "When do you want to see results?", type: "choice",
+    options: [
+      { value: 4, label: "1 month", icon: "📅" },
+      { value: 12, label: "3 months", icon: "📆" },
+      { value: 24, label: "6 months", icon: "🗓️" },
+      { value: 52, label: "1 year", icon: "✅" },
+    ] },
+];

@@ -1,0 +1,32 @@
+export type ProductVerdict = "yes" | "maybe" | "avoid" | string;
+
+export type Product = {
+  id: string | number;
+  name: string;
+  brand: string;
+  category: string;
+  productType?: string;
+  primaryUse?: string;
+  packVariant?: string;
+  price: number;
+  origPrice?: number;
+  rating: number;
+  reviews?: number;
+  verdict: string;
+  verdictKey?: ProductVerdict;
+  scienceScore?: number;
+  safetyScore?: number;
+  valueScore?: number;
+  efficacyScore?: number;
+  transparency?: number;
+  parentScore?: number;
+  imageUrl?: string;
+  productImage?: string;
+  imageSourceUrl?: string;
+  imageSearchUrl?: string;
+  imageStatus?: string;
+  imageCheckedAt?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  reviewStatus?: string;
+};

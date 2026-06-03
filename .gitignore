@@ -1,0 +1,52 @@
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# production builds
+build/
+dist/
+
+# environment variables
+.env
+.env.local
+.env.*.local
+
+# Vercel local metadata
+.vercel/
+
+# TypeScript cache
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# temp files
+*.tmp
+*.temp
+*.tmp.*
+product_image_next_steps.updated.tmp.xlsx
+
+# legacy backend generated files
+scripts/product-images/legacy-backend/test_downloads/
+scripts/product-images/legacy-backend/**/*.xlsx
+scripts/product-images/legacy-backend/**/*.tmp
+scripts/product-images/legacy-backend/**/*.log
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
