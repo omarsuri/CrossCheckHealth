@@ -11,3 +11,9 @@ export function getAnonymousId() {
 
   return anonymousId;
 }
+
+export function getExistingAnonymousId() {
+  if (typeof window === "undefined") return "";
+
+  return window.localStorage.getItem(ANONYMOUS_ID_KEY) || "";
+}

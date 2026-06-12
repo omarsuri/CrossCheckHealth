@@ -87,16 +87,22 @@ export const LoginModal = ({ isOpen, onClose, onLogin }) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
       if (error) throw error;
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Google login could not be started. Please try again.");
+      console.error("Google sign-in error:", error instanceof Error ? error.message : error);
+      setErrorMessage("Google sign-in failed. Please try again.");
       setLoading(false);
     }
   };
@@ -153,7 +159,7 @@ export const LoginModal = ({ isOpen, onClose, onLogin }) => {
           <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
           <div className="relative flex justify-center text-sm"><span className="px-2 bg-white text-gray-500">or continue with</span></div>
         </div>
-        <Button variant="outline" fullWidth icon="user" onClick={handleGoogleLogin} disabled={loading}>Continue with Google</Button>
+        <Button variant="outline" fullWidth icon="user" onClick={handleGoogleSignIn} disabled={loading}>Continue with Google</Button>
         <p className="text-center text-sm text-gray-500 mt-4">
           {mode === "login" ? "Don't have an account? " : "Already have an account? "}
           <button type="button" onClick={switchMode} className="text-teal-deep font-medium hover:underline">
