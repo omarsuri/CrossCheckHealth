@@ -92,33 +92,43 @@ const isRealIngredientText = (value: any) => {
   return !PLACEHOLDER_INGREDIENT_PATTERNS.some((pattern) => pattern.test(text));
 };
 
-const getIngredientCards = (product: any) => {
-  const mainIngredients = Array.isArray(product.mainIngredients) ? product.mainIngredients : [];
-  if (mainIngredients.length > 0) {
-    return mainIngredients
-      .filter((ing: any) => isRealIngredientText(ing.name || ing.ingredient_name))
-      .map((ing: any) => ({
-        name: ing.name || ing.ingredient_name,
-        amount: isRealIngredientText(ing.amount) ? ing.amount : "",
-        type: ing.type || ing.part_used || "Ingredient",
-        color: ing.color || "green",
-        microcopy: ing.microcopy || [ing.scientific_name, ing.part_used].filter(isRealIngredientText).join(" / ") || "Verified ingredient",
-      }));
-  }
-  if (Array.isArray(product.ingredientCards) && product.ingredientCards.length > 0) {
-    return product.ingredientCards.filter((ing: any) => isRealIngredientText(ing.name));
-  }
-  const ingredients = Array.isArray(product.ingredients) ? product.ingredients : [];
-  return ingredients.length > 0
-    ? ingredients.filter((ing: any) => isRealIngredientText(ing.name || ing.ingredient_name)).map((ing: any) => ({
-        name: ing.name || ing.ingredient_name || "Ingredient",
-        amount: isRealIngredientText(ing.amount) ? ing.amount : "",
-        type: ing.type || ing.ingredientType || "Ingredient",
-        color: ["good", "eff"].includes(ing.status) ? "green" : ["warn", "con"].includes(ing.status) ? "amber" : "teal",
-        microcopy: ing.microcopy || ing.evidenceLevel || ing.evidence_level || "Declared ingredient",
-      }))
-    : [];
+const isDeviceProduct = (product: any) =>
+  String(product.category || product.categoryLabel || product.cat || product.categorySlug || "").toLowerCase() === "device";
+
+const getKeySpecCards = (product: any) => {
+  const specs = Array.isArray(product.keySpecs) ? product.keySpecs : Array.isArray(product.key_specs) ? product.key_specs : [];
+  return specs
+    .filter((spec: any) => isRealIngredientText(spec?.name || spec?.label || spec?.key || spec?.spec || spec))
+    .map((spec: any) => {
+      if (typeof spec === "string") return { name: spec, amount: "", type: "Spec", color: "teal", microcopy: "Verified product spec" };
+      return {
+        name: spec.name || spec.label || spec.key || spec.spec,
+        amount: isRealIngredientText(spec.value || spec.amount) ? spec.value || spec.amount : "",
+        type: "Spec",
+        color: "teal",
+        microcopy: spec.microcopy || "Verified product spec",
+      };
+    });
 };
+
+const getMainIngredientCards = (product: any) => {
+  const mainIngredients = Array.isArray(product.mainIngredients) ? product.mainIngredients : [];
+  return mainIngredients
+    .filter((ing: any) => isRealIngredientText(ing.name || ing.ingredient_name))
+    .map((ing: any) => ({
+      name: ing.name || ing.ingredient_name,
+      amount: isRealIngredientText(ing.amount) ? ing.amount : "",
+      type: ing.type || ing.part_used || "Ingredient",
+      color: ing.color || "green",
+      microcopy: ing.microcopy || [ing.scientific_name, ing.part_used].filter(isRealIngredientText).join(" / ") || "Verified ingredient",
+    }));
+};
+
+const getInsideCards = (product: any) => isDeviceProduct(product) ? getKeySpecCards(product) : getMainIngredientCards(product);
+const getInsideTitle = (product: any) => isDeviceProduct(product) ? "Key specs" : "What's inside";
+const getInsideEmptyText = (product: any) => isDeviceProduct(product) ? "Specs not verified yet" : "Ingredients not verified yet";
+const getInsideInterpretationTitle = (product: any) => isDeviceProduct(product) ? "Spec interpretation" : "Ingredient interpretation";
+const getInsideFactTitle = (product: any) => isDeviceProduct(product) ? "Product specs" : "Verified ingredients";
 
 const ScoreBar = ({ label, score, color = "#0E7C7B" }: { label: string; score?: number; color?: string }) => (
   <div>
@@ -135,7 +145,7 @@ const ScoreBar = ({ label, score, color = "#0E7C7B" }: { label: string; score?: 
 const BrandProductSVG = ({ product, theme }: { product: any; theme: any }) => {
   const reactId = useId().replace(/:/g, "");
   const id = `product-${reactId}-${String(product.id).replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const brand = (product.brand || "SwasthyaSathi").length > 16 ? `${product.brand.slice(0, 15)}.` : product.brand || "SwasthyaSathi";
+  const brand = (product.brand || "HealthIQ").length > 16 ? `${product.brand.slice(0, 15)}.` : product.brand || "HealthIQ";
   const form = String(product.form || "").toLowerCase();
   const kind = form.includes("powder") ? "jar" : form.includes("tablet") ? "blister" : "bottle";
 
@@ -180,7 +190,7 @@ const BrandProductSVG = ({ product, theme }: { product: any; theme: any }) => {
 
 const ProductImage = ({ product, theme, className = "" }: { product: any; theme: any; className?: string }) => {
   const [failed, setFailed] = useState(false);
-  const src = product.productImage || product.imageUrl || product.image_url;
+  const src = product.imageUrl || product.image_url;
 
   if (isRenderableProductImage(src) && !failed) {
     return (
@@ -194,7 +204,7 @@ const ProductImage = ({ product, theme, className = "" }: { product: any; theme:
 };
 
 const StylizedLabel = ({ product, theme }: { product: any; theme: any }) => {
-  const ingredients = getIngredientCards(product);
+  const ingredients = getInsideCards(product);
   return (
     <div className="flex h-full w-full flex-col rounded-2xl border bg-white p-5 font-mono" style={{ borderColor: theme.mid }}>
       <div className="border-b-2 pb-2 text-center" style={{ borderColor: theme.primary }}>
@@ -202,21 +212,19 @@ const StylizedLabel = ({ product, theme }: { product: any; theme: any }) => {
         <p className="mt-0.5 text-[10px] text-ink/55">{product.name}</p>
       </div>
       <div className="border-b border-ink/10 py-2.5">
-        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: theme.deep }}>Supplement facts</p>
-        <p className="mt-0.5 text-[9px] text-ink/50">Serving size: 1 {String(getProductFormLabel(product)).toLowerCase()}</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: theme.deep }}>{getInsideFactTitle(product)}</p>
       </div>
       <div className="flex-1 overflow-y-auto py-2.5 text-[10px]">
-        <div className="mb-1 flex justify-between border-b border-ink/10 pb-1 font-bold text-ink"><span>Ingredient</span><span>Amount</span></div>
+        <div className="mb-1 flex justify-between border-b border-ink/10 pb-1 font-bold text-ink"><span>{isDeviceProduct(product) ? "Spec" : "Ingredient"}</span><span>{isDeviceProduct(product) ? "Value" : "Amount"}</span></div>
         {ingredients.length > 0 ? ingredients.map((ing: any, index: number) => (
           <div key={`${ing.name}-${index}`} className="flex justify-between border-b border-ink/5 py-1.5 text-ink/80">
             <span className="pr-2 leading-tight">{ing.name}</span>
             <span className="whitespace-nowrap font-bold" style={{ color: theme.deep }}>{ing.amount}</span>
           </div>
-        )) : <p className="py-3 text-ink/55">Ingredients not verified yet</p>}
+        )) : <p className="py-3 text-ink/55">{getInsideEmptyText(product)}</p>}
       </div>
       <div className="border-t-2 pt-2 text-[8.5px] leading-snug text-ink/50" style={{ borderColor: theme.primary }}>
-        <p>{getProductChips(product).slice(0, 2).join(" / ")}</p>
-        <p className="mt-0.5">Interpreted label preview / actual packaging may differ</p>
+        <p>Verified product information only / actual packaging may differ</p>
       </div>
     </div>
   );
@@ -225,7 +233,7 @@ const StylizedLabel = ({ product, theme }: { product: any; theme: any }) => {
 const ProductHero = ({ product, theme }: { product: any; theme: any }) => {
   const [slide, setSlide] = useState(0);
   const labels = ["Product", "Label", "Inside"];
-  const ingredients = getIngredientCards(product);
+  const ingredients = getInsideCards(product);
   const go = (direction: number) => setSlide((slide + direction + 3) % 3);
 
   return (
@@ -242,13 +250,13 @@ const ProductHero = ({ product, theme }: { product: any; theme: any }) => {
         {slide === 1 && <div className="absolute inset-0 flex items-center justify-center p-5"><StylizedLabel product={product} theme={theme} /></div>}
         {slide === 2 && (
           <div className="absolute inset-0 overflow-y-auto p-5">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-widest" style={{ color: theme.deep }}>Ingredient interpretation</p>
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-widest" style={{ color: theme.deep }}>{getInsideInterpretationTitle(product)}</p>
             {ingredients.length > 0 ? <div className="space-y-2">
               {ingredients.map((ing: any, index: number) => {
                 const status = statusFor(ing.color);
                 return <div key={`${ing.name}-${index}`} className="rounded-xl bg-white/85 p-3"><div className="flex items-start justify-between gap-2"><p className="text-[12.5px] font-semibold leading-tight text-ink">{ing.name}</p><span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: status.dot }} /></div><p className="mt-1 text-[11px]" style={{ color: status.text }}>{ing.microcopy}</p></div>;
               })}
-            </div> : <div className="rounded-xl bg-white/85 p-3 text-sm text-ink/60">Ingredients not verified yet</div>}
+            </div> : <div className="rounded-xl bg-white/85 p-3 text-sm text-ink/60">{getInsideEmptyText(product)}</div>}
           </div>
         )}
         <button onClick={() => go(-1)} aria-label="Previous product view" className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/90 transition-colors hover:bg-white" style={{ color: theme.deep }}><Icon name="chevronLeft" size={16} /></button>
@@ -311,8 +319,8 @@ export const ProductCardV2 = ({ product, onDetails, onCompare, inCompare, family
   const theme = themeFor(product.cat || product.categorySlug);
   const verdict = statusFor(product.verdictColor === "green" ? "green" : product.verdictColor === "red" ? "red" : "amber");
   const price = getProductPrice(product);
-  const ingredients = getIngredientCards(product);
-  const primaryIngredient = ingredients[0];
+  const insideItems = getInsideCards(product);
+  const primaryInsideItem = insideItems[0];
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-ink/8 bg-white shadow-glass transition-shadow hover:shadow-lift">
@@ -331,12 +339,12 @@ export const ProductCardV2 = ({ product, onDetails, onCompare, inCompare, family
         <h3 className="serif mb-1 text-[17px] font-medium leading-snug text-ink">{product.name}</h3>
         <p className="mb-3 text-xs text-ink/45">{product.brand}</p>
         <div className="mb-3 rounded-xl p-3" style={{ background: theme.tint }}>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: theme.deep }}>What's inside - {ingredients.length}</p>
-          {primaryIngredient ? <div className="flex items-center gap-2 text-[12px] text-ink/75">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: statusFor(primaryIngredient?.color).dot }} />
-            <span className="leading-tight">{primaryIngredient?.name || "Ingredient not listed"}</span>
-          </div> : <p className="text-[12px] text-ink/55">Ingredients not verified yet</p>}
-          {ingredients.length > 1 && <p className="mt-1 pl-3.5 text-[11px] text-ink/40">+{ingredients.length - 1} more</p>}
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: theme.deep }}>{getInsideTitle(product)} - {insideItems.length}</p>
+          {primaryInsideItem ? <div className="flex items-center gap-2 text-[12px] text-ink/75">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: statusFor(primaryInsideItem?.color).dot }} />
+            <span className="leading-tight">{primaryInsideItem?.name}</span>
+          </div> : <p className="text-[12px] text-ink/55">{getInsideEmptyText(product)}</p>}
+          {insideItems.length > 1 && <p className="mt-1 pl-3.5 text-[11px] text-ink/40">+{insideItems.length - 1} more</p>}
         </div>
         {familyMode && <p className="mb-3 text-[11px]" style={{ color: product.safeElders ? STATUS.green.text : STATUS.amber.text }}>{product.safeElders ? "Suitable for older adults" : "Review family suitability before buying"}</p>}
         <div className="mt-auto flex items-center justify-between border-t border-ink/8 pt-3 text-[11px]">
@@ -357,7 +365,7 @@ export const ProductDetailV2 = ({ product, navigate }: any) => {
   const verdict = statusFor(product.verdictColor === "green" ? "green" : product.verdictColor === "red" ? "red" : "amber");
   const price = getProductPrice(product);
   const scores = getProductScores(product);
-  const ingredients = getIngredientCards(product);
+  const insideItems = getInsideCards(product);
   const chips = getProductChips(product);
   const warnings = Array.isArray(product.warnings) ? product.warnings : Array.isArray(product.threats) ? product.threats : [];
 
@@ -386,13 +394,13 @@ export const ProductDetailV2 = ({ product, navigate }: any) => {
         </div>
       </div>
       <section>
-        <h3 className="serif mb-3 text-xl font-medium text-ink">What's inside / <span className="text-ink/40">{ingredients.length}</span></h3>
-        {ingredients.length > 0 ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{ingredients.map((ingredient: any, index: number) => <IngredientMicroCard key={`${ingredient.name}-${index}`} ingredient={ingredient} />)}</div> : <div className="rounded-2xl border border-ink/8 bg-white p-5 text-sm text-ink/60">Ingredients not verified yet</div>}
+        <h3 className="serif mb-3 text-xl font-medium text-ink">{getInsideTitle(product)} / <span className="text-ink/40">{insideItems.length}</span></h3>
+        {insideItems.length > 0 ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{insideItems.map((ingredient: any, index: number) => <IngredientMicroCard key={`${ingredient.name}-${index}`} ingredient={ingredient} />)}</div> : <div className="rounded-2xl border border-ink/8 bg-white p-5 text-sm text-ink/60">{getInsideEmptyText(product)}</div>}
       </section>
       <section>
         <h3 className="serif mb-3 text-xl font-medium text-ink">Research-informed interpretation</h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <ResearchAngleCard theme={theme} title="Ingredient research" icon="search" body={product.researchPanels?.ingredientResearch || "Ingredient research notes are not available yet."} badge={product.researchPanels?.evidenceStrength} />
+          {!isDeviceProduct(product) && <ResearchAngleCard theme={theme} title="Ingredient research" icon="search" body={product.researchPanels?.ingredientResearch || "Ingredients not verified yet"} badge={product.researchPanels?.evidenceStrength} />}
           <ResearchAngleCard theme={theme} title="Consumer transparency" icon="shield" body={product.researchPanels?.consumerTransparency || "Transparency notes are not available yet."} />
           <ResearchAngleCard theme={theme} title="Wellness context" icon="heart" body={product.researchPanels?.wellnessContext || "Preventive product guidance only."} />
           <ResearchAngleCard theme={theme} title="Exposure reading" icon="alertTriangle" body={product.researchPanels?.exposureInterpretation || "No exposure notes are available yet."} />

@@ -42,7 +42,9 @@ type DetailedHeartResponse = {
   };
 };
 
-export const DetailedHeartFlow = ({ navigate }) => {
+const DETAILED_HEART_PATH = "/tools/heart-health/detailed";
+
+export const DetailedHeartFlow = ({ navigate, user, authReady = true, onLoginRequired }) => {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [showResult, setShowResult] = useState(false);
@@ -52,6 +54,11 @@ export const DetailedHeartFlow = ({ navigate }) => {
 
   const questions = DETAILED_HEART_QUESTIONS;
 
+  useEffect(() => {
+    if (authReady && !user) {
+      onLoginRequired?.(DETAILED_HEART_PATH);
+    }
+  }, [authReady, onLoginRequired, user]);
 
   const handleInput = (val) => { setAnswers({ ...answers, [questions[step].id]: val }); };
   const submitAssessment = async (completedAnswers: Record<string, any>) => {
@@ -63,6 +70,7 @@ export const DetailedHeartFlow = ({ navigate }) => {
       const sessionUser = data.session?.user;
 
       if (!sessionUser?.id) {
+        onLoginRequired?.(DETAILED_HEART_PATH);
         setError("Please sign in to save and view your detailed heart assessment.");
         return;
       }
@@ -100,6 +108,27 @@ export const DetailedHeartFlow = ({ navigate }) => {
   };
   const handleNext = () => { if (loading) return; if (step < questions.length - 1) setStep(step + 1); else submitAssessment(answers); };
   const handleBack = () => { if (step > 0) setStep(step - 1); else navigate("/tools/heart-health"); };
+
+  if (!authReady) {
+    return (
+      <div className="max-w-xl mx-auto px-4 sm:px-6 py-12 text-center">
+        <p className="text-sm text-gray-500">Checking your session...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-xl mx-auto px-4 sm:px-6 py-12 text-center">
+        <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Icon name="lock" size={24} className="text-amber-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-charcoal mb-2">Sign in to start the detailed assessment</h2>
+        <p className="text-gray-500 mb-6">Your quick assessment can stay anonymous, but detailed heart insights are saved to your account.</p>
+        <Button variant="primary" onClick={() => onLoginRequired?.(DETAILED_HEART_PATH)}>Login / Create Free Account</Button>
+      </div>
+    );
+  }
 
   if (showResult && result) {
     const riskLevel = result.riskLevel === "higher" ? "Higher" : result.riskLevel === "moderate" ? "Moderate" : "Low";
@@ -203,4 +232,3 @@ export const DetailedHeartFlow = ({ navigate }) => {
     </div>
   );
 };
-

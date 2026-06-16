@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { supabase } from "@/lib/supabase";
@@ -32,6 +32,10 @@ export const Navbar = ({ user, onLogin, onLogout, navigate, unreadCount }) => {
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
+  const navDropdownRef = useRef<HTMLDivElement | null>(null);
+  const profileDropdownRef = useRef<HTMLDivElement | null>(null);
+  const notificationDropdownRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -83,23 +87,50 @@ export const Navbar = ({ user, onLogin, onLogout, navigate, unreadCount }) => {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (!openGroup && !profileOpen && !notifOpen && !menuOpen) return;
+
+    const closeIfOutside = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      if (openGroup && navDropdownRef.current && !navDropdownRef.current.contains(target)) {
+        setOpenGroup(null);
+      }
+
+      if (profileOpen && profileDropdownRef.current && !profileDropdownRef.current.contains(target)) {
+        setProfileOpen(false);
+      }
+
+      if (notifOpen && notificationDropdownRef.current && !notificationDropdownRef.current.contains(target)) {
+        setNotifOpen(false);
+      }
+
+      if (menuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpenGroup(null);
+      setProfileOpen(false);
+      setNotifOpen(false);
+      setMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeIfOutside);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeIfOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen, notifOpen, openGroup, profileOpen]);
+
   const realUnreadCount = user ? notifications.filter((notification) => !notification.read_at).length : 0;
 
   const navGroups = [
-    {
-      name: "SwasthyaSathi",
-      items: [
-        { name: "SwasthyaSathi Products", path: "/tools/products", icon: "search" },
-        { name: "Scanner", path: "/tools/products/scanner", icon: "camera" },
-      ],
-    },
-    {
-      name: "RaktaSetu",
-      items: [
-        { name: "Bloodwork Compare", path: "/tools/raktasetu", icon: "activity" },
-        { name: "Upload Report", path: "/tools/raktasetu", icon: "fileText" },
-      ],
-    },
     {
       name: "Check",
       items: [
@@ -116,11 +147,25 @@ export const Navbar = ({ user, onLogin, onLogout, navigate, unreadCount }) => {
       ],
     },
     {
+      name: "HealthIQ",
+      items: [
+        { name: "HealthIQ Products", path: "/tools/products", icon: "search" },
+        { name: "Scanner", path: "/tools/products/scanner", icon: "camera" },
+      ],
+    },
+    {
+      name: "Labwise",
+      items: [
+        { name: "Bloodwork Compare", path: "/tools/raktasetu", icon: "activity" },
+        { name: "Upload Report", path: "/tools/raktasetu", icon: "fileText" },
+      ],
+    },
+    {
       name: "Exercise Intelligence",
       items: [
         { name: "Fat Gain/Loss Prediction", path: "/tools/body-fat", icon: "scale" },
-        { name: "BMI Calculator", comingSoon: true, icon: "activity" },
-        { name: "Lean Mass Calculator", comingSoon: true, icon: "trendingUp" },
+        { name: "BMI Calculator", path: "/tools/bmi-calculator", icon: "activity" },
+        { name: "Lean Mass Calculator", path: "/tools/lean-mass-calculator", icon: "trendingUp" },
         { name: "Personalised Exercise Plan", comingSoon: true, icon: "calendar" },
         { name: "Intelligent Diet", comingSoon: true, icon: "zap" },
       ],
@@ -135,6 +180,7 @@ export const Navbar = ({ user, onLogin, onLogout, navigate, unreadCount }) => {
   ];
   const profileItems = [
     { id: "dashboard", name: "Dashboard", path: "/dashboard", icon: "home" },
+    { id: "health-profile", name: "Health Profile", path: "/dashboard/health-profile", icon: "activity" },
     { id: "assessment-history", name: "Assessment History", path: "/dashboard/history", icon: "clock" },
     { id: "parent-profiles", name: "Parent Profiles", path: "/dashboard/parents", icon: "users" },
   ];
@@ -156,7 +202,7 @@ export const Navbar = ({ user, onLogin, onLogout, navigate, unreadCount }) => {
                 <span className="serif text-2xl font-bold text-aqua-deep tracking-tight italic">Health</span>
               </span>
             </button>
-            <div className="hidden lg:flex items-center gap-1">
+            <div ref={navDropdownRef} className="hidden lg:flex items-center gap-1">
               {navGroups.map((group, index) => (
                 <div key={group.name} className="relative">
                   <button onClick={() => setOpenGroup(openGroup === group.name ? null : group.name)}
@@ -184,7 +230,7 @@ export const Navbar = ({ user, onLogin, onLogout, navigate, unreadCount }) => {
             <button onClick={() => navigate("/support")} className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-full hover:bg-cream-warm text-sm font-medium text-ink/75 hover:text-ink transition-colors">Support</button>
             {user ? (
               <div className="flex items-center gap-2">
-                <div className="relative">
+                <div ref={notificationDropdownRef} className="relative">
                   <button onClick={() => setNotifOpen(!notifOpen)} className="p-2 rounded-full hover:bg-cream-warm relative">
                     <Icon name="bell" size={20} className="text-ink/65" />
                     {realUnreadCount > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-red-500 rounded-full text-[10px] leading-5 text-white text-center font-semibold">{realUnreadCount}</span>}
@@ -220,7 +266,7 @@ export const Navbar = ({ user, onLogin, onLogout, navigate, unreadCount }) => {
                     </div>
                   )}
                 </div>
-                <div className="relative">
+                <div ref={profileDropdownRef} className="relative">
                   <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-cream-warm transition-colors">
                     <div className="w-8 h-8 bg-ink rounded-full flex items-center justify-center text-cream text-sm font-medium">{user.name?.[0] || "U"}</div>
                     <span className="hidden sm:block text-sm font-medium text-ink/75">{user.name}</span>
@@ -251,7 +297,7 @@ export const Navbar = ({ user, onLogin, onLogout, navigate, unreadCount }) => {
         </div>
       </div>
       {menuOpen && (
-        <div className="lg:hidden bg-white border-t border-ink/5 slide-up">
+        <div ref={mobileMenuRef} className="lg:hidden bg-white border-t border-ink/5 slide-up">
           <div className="px-4 py-3 space-y-1">
             {navGroups.map(group => (
               <div key={group.name} className="py-1">

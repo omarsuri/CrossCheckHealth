@@ -8,7 +8,7 @@ const schema = z.object({
   user_id: z.string().uuid().optional(),
   anonymous_id: z.string().optional(),
   anonymous: z.boolean().default(true),
-  answers: z.record(z.string(), z.string()),
+  answers: z.record(z.string(), z.unknown()),
 });
 
 export async function POST(req: NextRequest) {
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       ([question_id, answer_value]) => ({
         assessment_id: assessment.id,
         question_id,
-        answer_value,
+        answer_value: typeof answer_value === "string" ? answer_value : JSON.stringify(answer_value),
       })
     );
 

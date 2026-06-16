@@ -19,6 +19,7 @@ import { ECGBackground, MagneticWrap, ScoreRing, ShareButtons, TiltCard, track, 
 import { LockedModal } from "@/components/auth/LockedModal";
 import { ScannerModal } from "@/components/tools/products/ProductScanner";
 import { supabase } from "@/lib/supabase";
+import { getUserHealthProfile, upsertUserHealthProfile } from "@/lib/user-health-profile";
 
 type BodyFatApiResult = {
   bmr: number;
@@ -121,6 +122,40 @@ export const BodyFatFlow = ({ navigate, user, onLogin }) => {
   const [apiResult, setApiResult] = useState<BodyFatApiResult | null>(null);
   const [error, setError] = useState("");
   const [authRequired, setAuthRequired] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProfile = async () => {
+      if (!user) return;
+
+      try {
+        const profile = await getUserHealthProfile();
+
+        if (!active || !profile?.consent_to_autofill) return;
+
+        setAnswers(current => ({
+          ...current,
+          ...(profile.age ? { age: Number(profile.age) } : {}),
+          ...(profile.sex === "male" || profile.sex === "female" ? { sex: profile.sex } : {}),
+          ...(profile.height_cm ? { height: Number(profile.height_cm) } : {}),
+          ...(profile.weight_kg ? { weight: Number(profile.weight_kg) } : {}),
+          ...(profile.waist_cm ? { waist: Number(profile.waist_cm) } : {}),
+        }));
+      } catch (error) {
+        // Profile autofill is optional; assessment should continue without it.
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   if (!user || authRequired) {
     return (
@@ -148,6 +183,30 @@ export const BodyFatFlow = ({ navigate, user, onLogin }) => {
     if (frequency >= 3) return "3-4";
     if (frequency >= 1) return "1-2";
     return "none";
+  };
+  const saveBodyDetailsToProfile = async () => {
+    const inputs = getBodyFitnessInputs(answers);
+
+    setSavingProfile(true);
+    setProfileMessage("");
+    setProfileError("");
+
+    try {
+      await upsertUserHealthProfile({
+        age: Number(inputs.age),
+        sex: inputs.sex,
+        height_cm: Number(inputs.height),
+        weight_kg: Number(inputs.weight),
+        waist_cm: Number(inputs.waist),
+        physical_activity_level: getActivityLevel(Number(inputs.activity)),
+        consent_to_autofill: true,
+      });
+      setProfileMessage("Saved to your health profile. Autofill is now on.");
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "Unable to save health profile right now.");
+    } finally {
+      setSavingProfile(false);
+    }
   };
   const submitBodyAssessment = async (nextAnswers: Record<string, any>) => {
     const inputs = getBodyFitnessInputs(nextAnswers);
@@ -422,10 +481,19 @@ export const BodyFatFlow = ({ navigate, user, onLogin }) => {
           <h3 className="font-semibold text-charcoal mb-3">Share your forecast</h3>
           <ShareButtons />
         </Card>
+        <Card className="mb-6">
+          <h3 className="font-semibold text-charcoal mb-2">Health profile</h3>
+          <p className="text-sm text-gray-500 mb-4">Save or update age, sex, height, weight, waist, and activity level for faster future assessments.</p>
+          <Button variant="secondary" fullWidth onClick={saveBodyDetailsToProfile} disabled={savingProfile}>
+            {savingProfile ? "Saving..." : "Save / Update Health Profile"}
+          </Button>
+          {profileMessage && <p className="text-sm text-green-700 mt-3">{profileMessage}</p>}
+          {profileError && <p className="text-sm text-red-600 mt-3">{profileError}</p>}
+        </Card>
         <Disclaimer type="general" />
         <div className="flex flex-col sm:flex-row gap-3 mt-6">
           <Button variant="primary" fullWidth onClick={() => navigate("/dashboard")}>Save to Dashboard</Button>
-          <Button variant="secondary" fullWidth onClick={() => navigate("/tools/products")}>Open SwasthyaSathi</Button>
+          <Button variant="secondary" fullWidth onClick={() => navigate("/tools/products")}>Open HealthIQ</Button>
         </div>
       </div>
     );

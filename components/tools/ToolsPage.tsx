@@ -21,16 +21,16 @@ import { ScannerModal } from "@/components/tools/products/ProductScanner";
 
 export const ToolsPage = ({ navigate }) => {
   const toolTabs = [
-    { name: "SwasthyaSathi", path: "/tools/products", icon: "search" },
-    { name: "RaktaSetu", path: "/tools/raktasetu", icon: "activity" },
+    { name: "HealthIQ", path: "/tools/products", icon: "search" },
+    { name: "Labwise", path: "/tools/raktasetu", icon: "activity" },
     { name: "Checks", path: "/tools/heart-health", icon: "heart" },
     { name: "Exercise", path: "/tools/body-fat", icon: "activity" },
     { name: "Tracker", path: "/dashboard", icon: "trendingUp" },
     { name: "Parivar", path: "/dashboard/parents", icon: "users" },
   ];
   const tools = [
-    { title: "SwasthyaSathi", desc: "Compare health products by science, safety, value, and family suitability.", path: "/tools/products", icon: "search", iconBg: "bg-blue-50", iconColor: "text-navy", badge: "Free to Browse", badgeColor: "blue" },
-    { title: "RaktaSetu", desc: "Compare blood tests by biomarkers, hidden charges, lab quality, and preventive value.", path: "/tools/raktasetu", icon: "activity", iconBg: "bg-red-50", iconColor: "text-red-500", badge: "New", badgeColor: "red" },
+    { title: "HealthIQ", desc: "Compare health products by science, safety, value, and family suitability.", path: "/tools/products", icon: "search", iconBg: "bg-blue-50", iconColor: "text-navy", badge: "Free to Browse", badgeColor: "blue" },
+    { title: "Labwise", desc: "Compare blood tests by biomarkers, hidden charges, lab quality, and preventive value.", path: "/tools/raktasetu", icon: "activity", iconBg: "bg-red-50", iconColor: "text-red-500", badge: "New", badgeColor: "red" },
     { title: "PCOS Reflection", desc: "Educational PCOS feature reflection with consent-first summary, not a diagnosis.", path: "/tools/pcos", icon: "fileText", iconBg: "bg-terracotta-soft", iconColor: "text-terracotta-deep", badge: "Unlocked", badgeColor: "amber" },
     { title: "Heart Health", desc: "Quick and detailed checks for heart risk awareness.", path: "/tools/heart-health", icon: "heart", iconBg: "bg-red-50", iconColor: "text-red-500", badge: "Free Quick Check", badgeColor: "green" },
     { title: "Body Fat & Fitness", desc: "AI-powered body composition forecast and recommendations.", path: "/tools/body-fat", icon: "scale", iconBg: "bg-teal-soft", iconColor: "text-teal-deep", badge: "Member Tool", badgeColor: "teal" },
@@ -67,5 +67,4 @@ export const ToolsPage = ({ navigate }) => {
     </div>
   );
 };
-
 

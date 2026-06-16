@@ -37,7 +37,12 @@ pnpm-debug.log*
 *.tmp
 *.temp
 *.tmp.*
+~$*
 product_image_next_steps.updated.tmp.xlsx
+
+# generated script outputs
+scripts/logs/
+backups/
 
 # legacy backend generated files
 scripts/product-images/legacy-backend/test_downloads/

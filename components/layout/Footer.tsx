@@ -18,8 +18,8 @@ export const Footer = ({ navigate }) => (
           <ul className="space-y-2 text-sm">
             <li><button onClick={() => navigate("/tools/heart-health")} className="hover:text-white transition-colors">Heart Health</button></li>
             <li><button onClick={() => navigate("/tools/body-fat")} className="hover:text-white transition-colors">Body Fat</button></li>
-            <li><button onClick={() => navigate("/tools/products")} className="hover:text-white transition-colors">SwasthyaSathi</button></li>
-            <li><button onClick={() => navigate("/tools/raktasetu")} className="hover:text-white transition-colors">RaktaSetu</button></li>
+            <li><button onClick={() => navigate("/tools/products")} className="hover:text-white transition-colors">HealthIQ</button></li>
+            <li><button onClick={() => navigate("/tools/raktasetu")} className="hover:text-white transition-colors">Labwise</button></li>
           </ul>
         </div>
         <div>

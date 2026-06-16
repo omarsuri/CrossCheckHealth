@@ -290,7 +290,7 @@ export const Dashboard = ({ navigate, user }) => {
             <div className="space-y-2">
               <Button variant="outline" size="sm" fullWidth icon="heart" onClick={() => navigate("/tools/heart-health/quick")}>Start Heart Check</Button>
               <Button variant="outline" size="sm" fullWidth icon="scale" onClick={() => navigate("/tools/body-fat")}>Body Fat Assessment</Button>
-              <Button variant="outline" size="sm" fullWidth icon="search" onClick={() => navigate("/tools/products")}>Open SwasthyaSathi</Button>
+              <Button variant="outline" size="sm" fullWidth icon="search" onClick={() => navigate("/tools/products")}>Open HealthIQ</Button>
               <Button variant="outline" size="sm" fullWidth icon="users" onClick={() => navigate("/dashboard/parents/add")}>Add Parent Profile</Button>
             </div>
           </Card>

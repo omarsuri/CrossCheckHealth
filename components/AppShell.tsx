@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -11,11 +11,14 @@ import { QuickHeartFlow } from "@/components/tools/heart/QuickHeartFlow";
 import { DetailedHeartFlow } from "@/components/tools/heart/DetailedHeartFlow";
 import { BodyFatLanding } from "@/components/tools/body-fat/BodyFatLanding";
 import { BodyFatFlow } from "@/components/tools/body-fat/BodyFatFlow";
+import { BmiCalculatorPage } from "@/components/tools/bmi/BmiCalculatorPage";
+import { LeanMassCalculatorPage } from "@/components/tools/lean-mass/LeanMassCalculatorPage";
 import { ProductsPage } from "@/components/tools/products/ProductsPage";
 import { RaktaSetuPage } from "@/components/tools/raktasetu/RaktaSetuPage";
 import { PCOSReflectionPage } from "@/components/tools/pcos/PCOSReflectionPage";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { AssessmentHistory } from "@/components/dashboard/AssessmentHistory";
+import { HealthProfileSettingsPage } from "@/components/dashboard/HealthProfileSettingsPage";
 import { ParentProfilesPage } from "@/components/dashboard/ParentProfilesPage";
 import { ParentInvitePage } from "@/components/dashboard/ParentInvitePage";
 import { SupportPage } from "@/components/support/SupportPage";
@@ -23,6 +26,7 @@ import { LegalDocumentPage, PrivacyPage, DisclaimerPage } from "@/components/leg
 import { PricingPage } from "@/components/pricing/PricingPage";
 import { ToolsPage } from "@/components/tools/ToolsPage";
 import { ResultPage } from "@/components/results/ResultPage";
+import { clearPostAuthRedirect, getRedirectFromSearch, getSafeRedirect, storePostAuthRedirect } from "@/lib/auth-redirect";
 import { supabase } from "@/lib/supabase";
 import { getAnonymousId } from "@/lib/anonymous-id";
 
@@ -97,7 +101,9 @@ function AppShell({ initialPage = "/", initialParams }: { initialPage?: string; 
   const router = useRouter();
   const [page, setPage] = useState(initialPage);
   const [user, setUser] = useState<any>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [pendingAuthRedirect, setPendingAuthRedirect] = useState("");
   const [params, setParams] = useState<Record<string, string>>(initialParams ?? getInitialParams(initialPage));
 
   useEffect(() => {
@@ -108,6 +114,10 @@ function AppShell({ initialPage = "/", initialParams }: { initialPage?: string; 
       const sessionUser = data.session?.user;
       setUser(sessionUser ? toAppUser(sessionUser) : null);
       if (sessionUser?.id) handleAuthenticatedUser(sessionUser);
+      setAuthReady(true);
+    }).catch((error) => {
+      console.error("Load auth session failed:", error);
+      if (active) setAuthReady(true);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -119,6 +129,15 @@ function AppShell({ initialPage = "/", initialParams }: { initialPage?: string; 
       active = false;
       listener.subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    const redirectPath = getRedirectFromSearch(window.location.search);
+
+    if (redirectPath !== "/dashboard") {
+      setPendingAuthRedirect(redirectPath);
+      storePostAuthRedirect(redirectPath);
+    }
   }, []);
 
   const navigate = (path: string) => {
@@ -137,7 +156,24 @@ function AppShell({ initialPage = "/", initialParams }: { initialPage?: string; 
     }
   };
 
-  const handleLogin = (userData: any) => { setUser(userData); setLoginOpen(false); };
+  const requireLogin = useCallback((redirectPath = "/dashboard") => {
+    const safeRedirect = getSafeRedirect(redirectPath);
+    setPendingAuthRedirect(safeRedirect);
+    storePostAuthRedirect(safeRedirect);
+    setLoginOpen(true);
+  }, []);
+
+  const handleLogin = (userData: any, redirectPath?: string) => {
+    const safeRedirect = getSafeRedirect(redirectPath || pendingAuthRedirect, "");
+    setUser(userData);
+    setLoginOpen(false);
+    setPendingAuthRedirect("");
+    clearPostAuthRedirect();
+
+    if (safeRedirect) {
+      navigate(safeRedirect);
+    }
+  };
   const handleLogout = async () => { await supabase.auth.signOut(); setUser(null); navigate("/"); };
 
   const renderPage = () => {
@@ -145,15 +181,18 @@ function AppShell({ initialPage = "/", initialParams }: { initialPage?: string; 
       case "/": return <LandingPage navigate={navigate} />;
       case "/tools": return <ToolsPage navigate={navigate} />;
       case "/tools/heart-health": return <HeartLanding navigate={navigate} user={user} onLogin={() => setLoginOpen(true)} />;
-      case "/tools/heart-health/quick": return <QuickHeartFlow navigate={navigate} />;
-      case "/tools/heart-health/detailed": return <DetailedHeartFlow navigate={navigate} />;
+      case "/tools/heart-health/quick": return <QuickHeartFlow navigate={navigate} onLoginRequired={requireLogin} />;
+      case "/tools/heart-health/detailed": return <DetailedHeartFlow navigate={navigate} user={user} authReady={authReady} onLoginRequired={requireLogin} />;
       case "/tools/body-fat": return <BodyFatLanding navigate={navigate} user={user} onLogin={() => setLoginOpen(true)} />;
       case "/tools/body-fat/flow": return <BodyFatFlow navigate={navigate} user={user} onLogin={() => setLoginOpen(true)} />;
+      case "/tools/bmi-calculator": return <BmiCalculatorPage navigate={navigate} />;
+      case "/tools/lean-mass-calculator": return <LeanMassCalculatorPage navigate={navigate} />;
       case "/tools/products": return <ProductsPage navigate={navigate} />;
       case "/tools/products/scanner": return <ProductsPage navigate={navigate} initialScanner />;
       case "/tools/raktasetu": return <RaktaSetuPage navigate={navigate} />;
       case "/tools/pcos": return <PCOSReflectionPage navigate={navigate} />;
       case "/dashboard": return <Dashboard navigate={navigate} user={user} />;
+      case "/dashboard/health-profile": return <HealthProfileSettingsPage navigate={navigate} user={user} />;
       case "/dashboard/history": return <AssessmentHistory navigate={navigate} />;
       case "/dashboard/parents": return <ParentProfilesPage navigate={navigate} user={user} />;
       case "/dashboard/parents/add": return <ParentProfilesPage navigate={navigate} user={user} />;
@@ -178,7 +217,7 @@ function AppShell({ initialPage = "/", initialParams }: { initialPage?: string; 
       <Navbar user={user} onLogin={() => setLoginOpen(true)} onLogout={handleLogout} navigate={navigate} unreadCount={2} />
       <main className="flex-1">{renderPage()}</main>
       <Footer navigate={navigate} />
-      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} />
+      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} redirectPath={pendingAuthRedirect} />
     </div>
   );
 };

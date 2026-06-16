@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { consumePostAuthRedirect } from "@/lib/auth-redirect";
 import { getExistingAnonymousId } from "@/lib/anonymous-id";
+import { supabase } from "@/lib/supabase";
 
 const saveUserProfile = async (user: any) => {
   const fullName = user.user_metadata?.full_name || user.user_metadata?.name || "";
@@ -76,7 +77,7 @@ export default function AuthCallbackPage() {
           console.error("Google post-login setup failed:", setupError);
         }
 
-        if (active) router.replace("/dashboard");
+        if (active) router.replace(consumePostAuthRedirect());
       } catch (error) {
         console.error("Google callback error:", error);
         if (active) router.replace("/?error=google-signin-failed");

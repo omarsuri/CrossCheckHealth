@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Modal } from "@/components/ui/Modal";
+import { getSafeRedirect, storePostAuthRedirect } from "@/lib/auth-redirect";
 import { supabase } from "@/lib/supabase";
 
 const toAppUser = (user) => ({
@@ -33,7 +34,7 @@ const saveUserProfile = async (user, fallbackName) => {
   }
 };
 
-export const LoginModal = ({ isOpen, onClose, onLogin }) => {
+export const LoginModal = ({ isOpen, onClose, onLogin, redirectPath }) => {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -69,7 +70,7 @@ export const LoginModal = ({ isOpen, onClose, onLogin }) => {
 
       if (data.session && data.user) {
         saveUserProfile(data.user, name);
-        onLogin(toAppUser(data.user));
+        onLogin(toAppUser(data.user), getSafeRedirect(redirectPath, ""));
         onClose();
         return;
       }
@@ -93,6 +94,7 @@ export const LoginModal = ({ isOpen, onClose, onLogin }) => {
     setSuccessMessage("");
 
     try {
+      storePostAuthRedirect(redirectPath);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {

@@ -1,31 +1,23 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { Badge } from "@/components/ui/Badge";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Disclaimer } from "@/components/ui/Disclaimer";
 import { Icon } from "@/components/ui/Icon";
-import { Modal } from "@/components/ui/Modal";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { MOCK_ASSESSMENTS, MOCK_DOCTORS, MOCK_PARENTS } from "@/data/mockDashboard";
-import { MOCK_PRODUCTS } from "@/data/mockProducts";
-import { RAKTASETU_TESTS } from "@/data/mockBloodTests";
-import { BODY_FITNESS_STEPS } from "@/data/bodyQuestions";
-import { QUICK_HEART_QUESTIONS, DETAILED_HEART_QUESTIONS } from "@/data/heartQuestions";
-import { PCOS_STEPS } from "@/data/pcosQuestions";
-import { LEGAL_DOCS } from "@/data/legalDocs";
-import { ECGBackground, MagneticWrap, ScoreRing, ShareButtons, TiltCard, track, useMouseParallax, useScrollReveal, useTilt } from "@/components/shared/prototype";
-import { LockedModal } from "@/components/auth/LockedModal";
-import { ScannerModal } from "@/components/tools/products/ProductScanner";
+import { ShareButtons } from "@/components/shared/prototype";
+import { QUICK_HEART_QUESTIONS } from "@/data/heartQuestions";
 import { getAnonymousId } from "@/lib/anonymous-id";
 import { supabase } from "@/lib/supabase";
+import { getUserHealthProfile, upsertUserHealthProfile, UserHealthProfile } from "@/lib/user-health-profile";
 
 type QuickHeartResult = {
   assessment_id?: string;
-  riskLevel: "low" | "moderate" | "higher";
+  riskLevel: "low" | "moderate" | "high";
   riskScore: number;
   riskFactors: string[];
+  automaticHighRisk?: boolean;
+  riskFactorCount?: number;
   summary: string;
   recommendations: Array<{
     title: string;
@@ -43,17 +35,157 @@ type QuickHeartResponse = {
   };
 };
 
-export const QuickHeartFlow = ({ navigate }) => {
+const DETAILED_HEART_PATH = "/tools/heart-health/detailed";
+const NONE_OPTION = "None of these";
+const SAFETY_DISCLAIMER = "This quick assessment is for general health awareness only and is not a diagnosis. If you have chest pain, severe shortness of breath, fainting, or symptoms that feel urgent, seek medical help immediately.";
+
+const roundBmi = (heightCm?: number, weightKg?: number) => {
+  if (!heightCm || !weightKg) return null;
+  const heightMeters = heightCm / 100;
+  return Math.round((weightKg / (heightMeters * heightMeters)) * 10) / 10;
+};
+
+const toHeartSex = (sex?: string | null) => {
+  if (!sex) return undefined;
+  if (sex.toLowerCase() === "male") return "Male";
+  if (sex.toLowerCase() === "female") return "Female";
+  return sex;
+};
+
+const toProfileSex = (sex?: string) => {
+  if (sex === "Male") return "male";
+  if (sex === "Female") return "female";
+  return sex || null;
+};
+
+const knownConditionsFromProfile = (profile: UserHealthProfile) => {
+  const conditions: string[] = [];
+  if (profile.has_heart_disease) conditions.push("Heart disease or previous heart attack");
+  if (profile.has_stroke) conditions.push("Stroke");
+  if (profile.has_high_blood_pressure) conditions.push("High blood pressure");
+  if (profile.has_diabetes) conditions.push("Diabetes");
+  if (profile.has_lung_disease) conditions.push("Lung disease such as asthma or COPD");
+  if (profile.has_kidney_disease) conditions.push("Kidney disease");
+  return conditions;
+};
+
+const buildHeartPrefill = (profile: UserHealthProfile) => {
+  const prefill: Record<string, any> = {};
+  const conditions = knownConditionsFromProfile(profile);
+  const activity = profile.physical_activity_level;
+
+  if (conditions.length > 0) prefill.known_conditions = conditions;
+  if (profile.age) prefill.age = String(profile.age);
+  if (profile.sex) prefill.sex = toHeartSex(profile.sex);
+  if (profile.family_heart_history) prefill.family_history = profile.family_heart_history;
+  if (profile.smoking_status) prefill.nicotine = profile.smoking_status;
+  if (activity === "Yes" || activity === "No" || activity === "Not sure") prefill.physical_activity = activity;
+  else if (activity === "sedentary") prefill.physical_activity = "No";
+  else if (activity) prefill.physical_activity = "Yes";
+  if (profile.height_cm) prefill.height_cm = String(profile.height_cm);
+  if (profile.weight_kg) prefill.weight_kg = String(profile.weight_kg);
+  if (profile.waist_cm) {
+    prefill.waist_known = "Yes";
+    prefill.waist_size = String(profile.waist_cm);
+    prefill.waist_unit = "cm";
+  }
+  if (profile.cholesterol_status) prefill.cholesterol = profile.cholesterol_status;
+  if (profile.blood_sugar_status) prefill.blood_sugar = profile.blood_sugar_status;
+
+  return prefill;
+};
+
+const buildHeartProfilePayload = (answers: Record<string, any>): UserHealthProfile => {
+  const knownConditions = Array.isArray(answers.known_conditions) ? answers.known_conditions : [];
+  const waistSize = Number(answers.waist_size);
+  const waistCm = answers.waist_known === "Yes" && Number.isFinite(waistSize)
+    ? answers.waist_unit === "in" ? Math.round(waistSize * 2.54 * 10) / 10 : waistSize
+    : null;
+
+  return {
+    age: answers.age ? Number(answers.age) : null,
+    sex: toProfileSex(answers.sex),
+    height_cm: answers.height_cm ? Number(answers.height_cm) : null,
+    weight_kg: answers.weight_kg ? Number(answers.weight_kg) : null,
+    waist_cm: waistCm,
+    smoking_status: answers.nicotine || null,
+    physical_activity_level: answers.physical_activity || null,
+    has_heart_disease: knownConditions.includes("Heart disease or previous heart attack"),
+    has_stroke: knownConditions.includes("Stroke"),
+    has_high_blood_pressure: knownConditions.includes("High blood pressure"),
+    has_diabetes: knownConditions.includes("Diabetes") || answers.blood_sugar === "Diabetes",
+    has_lung_disease: knownConditions.includes("Lung disease such as asthma or COPD"),
+    has_kidney_disease: knownConditions.includes("Kidney disease"),
+    family_heart_history: answers.family_history || null,
+    cholesterol_status: answers.cholesterol || null,
+    blood_sugar_status: answers.blood_sugar || null,
+    consent_to_autofill: true,
+  };
+};
+
+export const QuickHeartFlow = ({ navigate, onLoginRequired }) => {
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, any>>({ waist_unit: "cm" });
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState<QuickHeartResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const questions = QUICK_HEART_QUESTIONS;
+  const q = questions[step];
 
-  const submitAssessment = async (nextAnswers: Record<string, string>) => {
+  useEffect(() => {
+    let active = true;
+
+    const loadProfile = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sessionUser = data.session?.user;
+
+        if (!sessionUser?.id) {
+          if (active) setIsLoggedIn(false);
+          return;
+        }
+
+        if (active) setIsLoggedIn(true);
+
+        const profile = await getUserHealthProfile();
+
+        if (!active || !profile?.consent_to_autofill) return;
+
+        setAnswers(current => ({ ...current, ...buildHeartPrefill(profile) }));
+      } catch (error) {
+        if (active) setIsLoggedIn(false);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const saveAnswersToProfile = async () => {
+    setSavingProfile(true);
+    setProfileMessage("");
+    setProfileError("");
+
+    try {
+      await upsertUserHealthProfile(buildHeartProfilePayload(answers));
+      setProfileMessage("Saved to your health profile. Autofill is now on.");
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "Unable to save health profile right now.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const submitAssessment = async (nextAnswers: Record<string, any>) => {
     setLoading(true);
     setError("");
 
@@ -93,34 +225,63 @@ export const QuickHeartFlow = ({ navigate }) => {
     }
   };
 
-  const handleSelect = (option) => {
+  const goNext = (nextAnswers = answers) => {
     if (loading) return;
-
-    const q = questions[step];
-    if (q.multi) {
-      const current = answers[q.id] || [];
-      const updated = current.includes(option) ? current.filter(o => o !== option) : [...current, option];
-      setAnswers({ ...answers, [q.id]: updated });
-    } else {
-      const nextAnswers = { ...answers, [q.id]: option };
-      setAnswers(nextAnswers);
-      if (step < questions.length - 1) { setStep(step + 1); }
-      else { submitAssessment(nextAnswers); }
-    }
+    if (step < questions.length - 1) setStep(step + 1);
+    else submitAssessment(nextAnswers);
   };
 
-  const handleNext = () => {
-    if (loading) return;
+  const updateAnswer = (key: string, value: any) => {
+    setAnswers(current => ({ ...current, [key]: value }));
+  };
 
-    if (step < questions.length - 1) setStep(step + 1);
-    else submitAssessment(answers);
+  const handleSingle = (option: string) => {
+    const nextAnswers = { ...answers, [q.id]: option };
+    setAnswers(nextAnswers);
+    setTimeout(() => goNext(nextAnswers), 250);
+  };
+
+  const handleMulti = (option: string) => {
+    const current = Array.isArray(answers[q.id]) ? answers[q.id] : [];
+    let updated: string[];
+
+    if (option === NONE_OPTION) {
+      updated = current.includes(option) ? current.filter(item => item !== option) : [option];
+    } else {
+      updated = current.includes(option)
+        ? current.filter(item => item !== option)
+        : [...current.filter(item => item !== NONE_OPTION), option];
+    }
+
+    setAnswers({ ...answers, [q.id]: updated });
+  };
+
+  const canProceed = () => {
+    if (q.type === "multi") return Array.isArray(answers[q.id]) && answers[q.id].length > 0;
+    if (q.type === "single") return Boolean(answers[q.id]);
+    if (q.type === "ageSex") return Boolean(answers.age) && Boolean(answers.sex);
+    if (q.type === "heightWeight") return Boolean(answers.height_cm) && Boolean(answers.weight_kg);
+    if (q.type === "waist") return Boolean(answers.waist_known);
+    return false;
+  };
+
+  const handleTakeDetailedAssessment = async () => {
+    const { data } = await supabase.auth.getSession();
+
+    if (!data.session?.user) {
+      onLoginRequired?.(DETAILED_HEART_PATH);
+      return;
+    }
+
+    navigate(DETAILED_HEART_PATH);
   };
 
   if (showResult && result) {
-    const riskFactors = result.riskFactors;
-    const riskLevel = result.riskLevel === "higher" ? "Higher" : result.riskLevel === "moderate" ? "Moderate" : "Low";
-    const riskColor = riskLevel === "Higher" ? "red" : riskLevel === "Moderate" ? "amber" : "green";
-    const riskText = riskLevel === "Higher" ? "Higher Awareness Risk" : riskLevel === "Moderate" ? "Moderate Awareness Risk" : "Low Awareness Risk";
+    const riskFactors = result.riskFactors ?? [];
+    const riskFactorCount = result.riskFactorCount ?? riskFactors.length;
+    const riskLevel = result.riskLevel === "high" ? "High" : result.riskLevel === "moderate" ? "Moderate" : "Low";
+    const riskColor = riskLevel === "High" ? "red" : riskLevel === "Moderate" ? "amber" : "green";
+    const riskText = `${riskLevel} Risk`;
 
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 slide-up">
@@ -131,67 +292,78 @@ export const QuickHeartFlow = ({ navigate }) => {
           <h2 className="text-2xl font-bold text-charcoal mb-2">{riskText}</h2>
           <p className="text-gray-500">Based on your quick heart health check</p>
         </div>
+
         <Card className="mb-6">
           <h3 className="font-semibold text-charcoal mb-3">What this means</h3>
-          <p className="text-sm text-gray-600 leading-relaxed mb-4">
-            {result.summary} This is a health awareness tool, not a diagnosis.
-          </p>
-          {riskFactors.length > 0 && (
+          <p className="text-sm text-gray-600 leading-relaxed mb-4">{result.summary}</p>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="bg-teal-soft/30 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-teal-deep">{riskFactorCount}</p>
+              <p className="text-xs text-gray-500">Risk factors</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-charcoal">{result.automaticHighRisk ? "Yes" : "No"}</p>
+              <p className="text-xs text-gray-500">High-risk answer</p>
+            </div>
+          </div>
+
+          {riskFactors.length > 0 ? (
             <>
-              <h4 className="font-medium text-charcoal mb-2 text-sm">Key contributing factors:</h4>
+              <h4 className="font-medium text-charcoal mb-2 text-sm">Counted risk factors:</h4>
               <ul className="space-y-1 mb-4">
-                {riskFactors.map(f => <li key={f} className="flex items-center gap-2 text-sm text-gray-600"><Icon name="alertTriangle" size={14} className="text-amber-500" />{f}</li>)}
+                {riskFactors.map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <Icon name="alertTriangle" size={14} className="text-amber-500" />{f}
+                  </li>
+                ))}
               </ul>
             </>
+          ) : (
+            <p className="text-sm text-gray-500 mb-4">No counted risk factors from this quick check.</p>
           )}
-          <h4 className="font-medium text-charcoal mb-2 text-sm">Recommended next steps:</h4>
-          <ul className="space-y-1 mb-4">
+
+          <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
+            <p className="text-sm text-red-700 leading-relaxed">{SAFETY_DISCLAIMER}</p>
+          </div>
+
+          <h4 className="font-medium text-charcoal mb-2 text-sm">Next steps:</h4>
+          <ul className="space-y-1">
             {result.recommendations.map(rec => (
-              <li key={rec.title} className="flex items-center gap-2 text-sm text-gray-600"><Icon name="check" size={14} className="text-teal-deep" />{rec.title}</li>
+              <li key={rec.title} className="flex items-start gap-2 text-sm text-gray-600">
+                <Icon name="check" size={14} className="text-teal-deep mt-0.5 flex-shrink-0" />
+                <span><span className="font-medium text-charcoal">{rec.title}</span> - {rec.description}</span>
+              </li>
             ))}
           </ul>
         </Card>
-        <Card className="mb-6">
-          <h3 className="font-semibold text-charcoal mb-3">Suggested products</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {MOCK_PRODUCTS.slice(0, 4).map(p => (
-              <div key={p.id} className="border border-gray-100 rounded-xl p-3 hover:border-teal-200 transition-colors cursor-pointer" onClick={() => navigate("/tools/products")}>
-                <p className="font-medium text-sm text-charcoal">{p.name}</p>
-                <p className="text-xs text-gray-400">{p.brand}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <Card className="mb-6">
-          <h3 className="font-semibold text-charcoal mb-3">Health partners near you</h3>
-          <div className="space-y-3">
-            {MOCK_DOCTORS.map(d => (
-              <div key={d.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                <div>
-                  <p className="font-medium text-sm text-charcoal">{d.name}</p>
-                  <p className="text-xs text-gray-500">{d.specialty} · {d.distance}</p>
-                </div>
-                <div className="flex items-center gap-1 text-amber-500 text-sm"><Icon name="star" size={14} />{d.rating}</div>
-              </div>
-            ))}
-          </div>
-        </Card>
+
+        {isLoggedIn && (
+          <Card className="mb-6">
+            <h3 className="font-semibold text-charcoal mb-2">Health profile</h3>
+            <p className="text-sm text-gray-500 mb-4">Save or update these common details for faster future BMI, heart, and fitness assessments.</p>
+            <Button variant="secondary" fullWidth onClick={saveAnswersToProfile} disabled={savingProfile}>
+              {savingProfile ? "Saving..." : "Save / Update Health Profile"}
+            </Button>
+            {profileMessage && <p className="text-sm text-green-700 mt-3">{profileMessage}</p>}
+            {profileError && <p className="text-sm text-red-600 mt-3">{profileError}</p>}
+          </Card>
+        )}
+
         <Card className="mb-6">
           <h3 className="font-semibold text-charcoal mb-3">Share your result</h3>
           <ShareButtons />
         </Card>
-        <Disclaimer type="general" />
+
         <div className="flex flex-col sm:flex-row gap-3 mt-6">
-          <Button variant="primary" fullWidth onClick={() => navigate("/tools/heart-health/detailed")}>Take Detailed Assessment</Button>
+          <Button variant="primary" fullWidth onClick={handleTakeDetailedAssessment}>Take Detailed Assessment</Button>
           <Button variant="secondary" fullWidth onClick={() => navigate("/tools/body-fat")}>Try Body Fat Assessment</Button>
         </div>
       </div>
     );
   }
 
-  const q = questions[step];
-  const selected = answers[q.id] || (q.multi ? [] : null);
-  const canProceed = q.multi ? selected.length > 0 : selected !== null;
+  const selected = answers[q.id] || [];
+  const bmi = roundBmi(Number(answers.height_cm), Number(answers.weight_kg));
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 slide-up">
@@ -203,27 +375,114 @@ export const QuickHeartFlow = ({ navigate }) => {
         <span className="text-sm text-gray-400">Question {step + 1} of {questions.length}</span>
         <h2 className="text-2xl font-bold text-charcoal mt-2">{q.question}</h2>
         {q.subtitle && <p className="text-sm text-gray-500 mt-2">{q.subtitle}</p>}
-        {q.multi && <p className="text-sm text-gray-500 mt-1">Select all that apply</p>}
+        {q.type === "multi" && <p className="text-sm text-gray-500 mt-1">Select all that apply</p>}
       </div>
-      <div className="space-y-3">
-        {q.options.map(opt => {
-          const isSelected = q.multi ? selected.includes(opt) : selected === opt;
-          return (
-            <button key={opt} onClick={() => handleSelect(opt)} disabled={loading}
-              className={`w-full text-left p-4 rounded-xl border-2 transition-all ${isSelected ? "border-teal-deep bg-teal-soft/30" : "border-gray-100 hover:border-gray-200 bg-white"}`}>
-              <div className="flex items-center justify-between">
-                <span className={`font-medium ${isSelected ? "text-teal-deep" : "text-charcoal"}`}>{opt}</span>
-                {isSelected && <Icon name="check" size={18} className="text-teal-deep" />}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+
+      {q.type === "multi" && (
+        <div className="space-y-3">
+          {q.options.map((opt: string) => {
+            const isSelected = selected.includes(opt);
+            return (
+              <button key={opt} onClick={() => handleMulti(opt)} disabled={loading}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all ${isSelected ? "border-teal-deep bg-teal-soft/30" : "border-gray-100 hover:border-gray-200 bg-white"}`}>
+                <div className="flex items-center justify-between">
+                  <span className={`font-medium ${isSelected ? "text-teal-deep" : "text-charcoal"}`}>{opt}</span>
+                  {isSelected && <Icon name="check" size={18} className="text-teal-deep" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {q.type === "single" && (
+        <div className="space-y-3">
+          {q.options.map((opt: string) => {
+            const isSelected = answers[q.id] === opt;
+            return (
+              <button key={opt} onClick={() => handleSingle(opt)} disabled={loading}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all ${isSelected ? "border-teal-deep bg-teal-soft/30" : "border-gray-100 hover:border-gray-200 bg-white"}`}>
+                <div className="flex items-center justify-between">
+                  <span className={`font-medium ${isSelected ? "text-teal-deep" : "text-charcoal"}`}>{opt}</span>
+                  {isSelected && <Icon name="check" size={18} className="text-teal-deep" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {q.type === "ageSex" && (
+        <div className="space-y-4">
+          <input type="number" min={1} max={120} value={answers.age || ""} onChange={e => updateAnswer("age", e.target.value)}
+            className="w-full px-4 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-teal-deep focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+            placeholder="Age" />
+          <div className="space-y-3">
+            {q.sexOptions.map((opt: string) => (
+              <button key={opt} onClick={() => updateAnswer("sex", opt)}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all ${answers.sex === opt ? "border-teal-deep bg-teal-soft/30" : "border-gray-100 hover:border-gray-200 bg-white"}`}>
+                <div className="flex items-center justify-between">
+                  <span className={`font-medium ${answers.sex === opt ? "text-teal-deep" : "text-charcoal"}`}>{opt}</span>
+                  {answers.sex === opt && <Icon name="check" size={18} className="text-teal-deep" />}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {q.type === "heightWeight" && (
+        <div className="space-y-4">
+          <input type="number" min={80} max={250} value={answers.height_cm || ""} onChange={e => updateAnswer("height_cm", e.target.value)}
+            className="w-full px-4 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-teal-deep focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+            placeholder="Height in cm" />
+          <input type="number" min={20} max={250} value={answers.weight_kg || ""} onChange={e => updateAnswer("weight_kg", e.target.value)}
+            className="w-full px-4 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-teal-deep focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+            placeholder="Weight in kg" />
+          {bmi !== null && (
+            <div className="bg-teal-soft/30 rounded-xl p-3 text-center">
+              <p className="text-sm text-gray-500">Estimated BMI</p>
+              <p className="text-2xl font-bold text-teal-deep">{bmi}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {q.type === "waist" && (
+        <div className="space-y-4">
+          <div className="space-y-3">
+            {q.options.map((opt: string) => (
+              <button key={opt} onClick={() => updateAnswer("waist_known", opt)}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all ${answers.waist_known === opt ? "border-teal-deep bg-teal-soft/30" : "border-gray-100 hover:border-gray-200 bg-white"}`}>
+                <div className="flex items-center justify-between">
+                  <span className={`font-medium ${answers.waist_known === opt ? "text-teal-deep" : "text-charcoal"}`}>{opt}</span>
+                  {answers.waist_known === opt && <Icon name="check" size={18} className="text-teal-deep" />}
+                </div>
+              </button>
+            ))}
+          </div>
+          {answers.waist_known === "Yes" && (
+            <div className="grid grid-cols-[1fr_auto] gap-3">
+              <input type="number" min={20} value={answers.waist_size || ""} onChange={e => updateAnswer("waist_size", e.target.value)}
+                className="w-full px-4 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-teal-deep focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+                placeholder="Waist size" />
+              <select value={answers.waist_unit || "cm"} onChange={e => updateAnswer("waist_unit", e.target.value)}
+                className="px-3 py-4 rounded-xl border-2 border-gray-200 focus:border-teal-deep outline-none bg-white">
+                <option value="cm">cm</option>
+                <option value="in">in</option>
+              </select>
+            </div>
+          )}
+          <p className="text-xs text-gray-400">Waist size is optional and will not stop you from completing this check.</p>
+        </div>
+      )}
+
       {loading && <p className="text-sm text-gray-500 mt-4 text-center">Saving your assessment...</p>}
       {error && <p className="text-sm text-red-600 mt-4 text-center">{error}</p>}
-      {q.multi && (
+
+      {q.type !== "single" && (
         <div className="mt-6">
-          <Button variant="primary" fullWidth onClick={handleNext} disabled={!canProceed || loading}>Continue</Button>
+          <Button variant="primary" fullWidth onClick={() => goNext()} disabled={!canProceed() || loading}>{loading ? "Saving..." : "Continue"}</Button>
         </div>
       )}
     </div>

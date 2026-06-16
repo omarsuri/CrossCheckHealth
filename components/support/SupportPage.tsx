@@ -65,7 +65,7 @@ export const SupportPage = ({ navigate }) => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
             <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-teal-deep focus:ring-2 focus:ring-teal-500/20 outline-none">
-              {["General question", "Account help", "Parent profile help", "SwasthyaSathi help", "Privacy concern", "Refund or cancellation", "Grievance redressal", "Other"].map(t => <option key={t}>{t}</option>)}
+              {["General question", "Account help", "Parent profile help", "HealthIQ help", "Privacy concern", "Refund or cancellation", "Grievance redressal", "Other"].map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
           <div>
@@ -80,7 +80,6 @@ export const SupportPage = ({ navigate }) => {
     </div>
   );
 };
-
 
 
 

@@ -48,6 +48,20 @@ const normalizeMainIngredient = (ingredient: any) => {
   };
 };
 
+const normalizeKeySpec = (spec: any) => {
+  if (!spec) return null;
+  if (typeof spec === "string") {
+    return isRealIngredientText(spec) ? { name: spec, value: "" } : null;
+  }
+  if (typeof spec !== "object") return null;
+  const name = spec.name || spec.label || spec.key || spec.spec;
+  if (!isRealIngredientText(name)) return null;
+  return {
+    name,
+    value: isRealIngredientText(spec.value || spec.amount) ? spec.value || spec.amount : "",
+  };
+};
+
 const normalizeRelationIngredient = (ingredient: any) => {
   if (!ingredient || typeof ingredient !== "object") return null;
   const name = ingredient.ingredient_name || ingredient.name;
@@ -80,12 +94,12 @@ export function normalizeProduct(product: any) {
   const category = Array.isArray(product.product_categories) ? product.product_categories[0] : product.product_categories;
   const score = asArray(product.product_scores)[0] ?? {};
   const mainIngredients = asArray(product.main_ingredients).map(normalizeMainIngredient).filter(Boolean);
-  const relationIngredients = asArray(product.product_ingredients).map(normalizeRelationIngredient).filter(Boolean);
-  const ingredients = mainIngredients.length > 0 ? mainIngredients : relationIngredients;
+  const ingredients = mainIngredients;
   const warnings = asArray(product.product_warnings);
   const tags = asArray(product.product_tags).map((tag: any) => tag.label || tag.tag || tag.name);
   const categoryName = product.category || category?.name || "Not listed";
   const categorySlug = product.cat || category?.slug || "wellness";
+  const isDevice = String(categoryName).toLowerCase() === "device" || String(categorySlug).toLowerCase() === "device";
   const form = product.form || product.product_form || "Not listed";
   const formLabel = product.subcategory || product.form_label || form;
   const dietLabel = product.diet_label || (product.diet_type === "veg" ? "Vegetarian" : product.diet_type === "nonveg" ? "Non-Veg" : product.diet_type || "Not listed");
@@ -189,13 +203,14 @@ export function normalizeProduct(product: any) {
       exposure: Math.max(0, 100 - toNumber(score.hype_score, 0)),
       value,
     },
-    mainIngredients,
+    mainIngredients: isDevice ? [] : mainIngredients,
+    keySpecs: asArray(product.key_specs).map(normalizeKeySpec).filter(Boolean),
     ingredientSourceUrl: product.ingredient_source_url,
     ingredientSourceName: product.ingredient_source_name,
     ingredientVerified: Boolean(product.ingredient_verified),
     ingredientReviewStatus: product.ingredient_review_status,
     ingredientCheckedAt: product.ingredient_checked_at,
-    ingredients: ingredients.map((ingredient: any) => ({
+    ingredients: isDevice ? [] : ingredients.map((ingredient: any) => ({
       id: ingredient.id,
       name: ingredient.name,
       amount: ingredient.amount || "",
@@ -204,7 +219,7 @@ export function normalizeProduct(product: any) {
       type: ingredient.type || "Ingredient",
       microcopy: ingredient.microcopy || "Declared ingredient",
     })),
-    ingredientCards: ingredients.map((ingredient: any) => ({
+    ingredientCards: isDevice ? [] : ingredients.map((ingredient: any) => ({
       name: ingredient.name,
       amount: ingredient.amount || "",
       type: ingredient.type || "Ingredient",

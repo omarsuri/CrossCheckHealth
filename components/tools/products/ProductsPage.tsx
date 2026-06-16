@@ -76,6 +76,16 @@ const normalizeMainIngredient = (ingredient) => {
     microcopy: [ingredient.scientific_name, ingredient.part_used].filter(isRealIngredientText).join(" / ") || "Verified ingredient",
   };
 };
+const normalizeKeySpec = (spec) => {
+  if (!spec) return null;
+  if (typeof spec === "string") return isRealIngredientText(spec) ? { name: spec, value: "" } : null;
+  const name = spec.name || spec.label || spec.key || spec.spec;
+  if (!isRealIngredientText(name)) return null;
+  return {
+    name,
+    value: isRealIngredientText(spec.value || spec.amount) ? spec.value || spec.amount : "",
+  };
+};
 const normalizeProductIngredient = (ingredient) => {
   if (!ingredient || typeof ingredient !== "object") return null;
   const name = ingredient.ingredient_name || ingredient.name;
@@ -110,8 +120,8 @@ const mapApiProduct = (product) => {
       description: product.interpretation || product.description || "Evidence not available.",
       practicalTake: product.practicalTake || product.interpretation || "Evidence not available.",
       affiliateLink: product.affiliateUrl || product.affiliateLink,
-      productImage: product.imageUrl || product.productImage,
-      imageUrl: product.imageUrl || product.productImage,
+      productImage: product.imageUrl,
+      imageUrl: product.imageUrl,
       safeElders: Boolean(product.safeElders),
       fssai: Boolean(product.fssai),
       discounted: toNumber(product.originalPrice ?? product.origPrice) > toNumber(product.price),
@@ -133,13 +143,14 @@ const mapApiProduct = (product) => {
   const category = Array.isArray(product.product_categories) ? product.product_categories[0] : product.product_categories;
   const scores = normalizeRelation(product.product_scores);
   const score = scores[0] || {};
-  const mainIngredients = normalizeRelation(product.main_ingredients).map(normalizeMainIngredient).filter(Boolean);
-  const relationIngredients = normalizeRelation(product.product_ingredients).map(normalizeProductIngredient).filter(Boolean);
-  const ingredients = mainIngredients.length > 0 ? mainIngredients : relationIngredients;
   const warnings = normalizeRelation(product.product_warnings);
   const verdictKey = score.verdict_key || "conditional";
   const categorySlug = product.cat || category?.slug || "wellness";
   const categoryName = product.category || category?.name || "Wellness";
+  const isDevice = String(categoryName || categorySlug).toLowerCase() === "device";
+  const mainIngredients = normalizeRelation(product.main_ingredients).map(normalizeMainIngredient).filter(Boolean);
+  const ingredients = isDevice ? [] : mainIngredients;
+  const keySpecs = normalizeRelation(product.key_specs).map(normalizeKeySpec).filter(Boolean);
   const price = toNumber(product.price);
   const origPrice = toNumber(product.original_price, price);
   const form = product.form || "capsule";
@@ -203,11 +214,12 @@ const mapApiProduct = (product) => {
     valueScore,
     safetyScore,
     parentScore,
-    productImage: product.product_image_url || product.image_url || product.productImage,
+    productImage: product.image_url,
     labelImage: product.label_image_url || product.labelImage,
-    imageUrl: product.product_image_url || product.image_url,
+    imageUrl: product.image_url,
     chips: [...new Set(chipList)].slice(0, 8),
-    mainIngredients,
+    mainIngredients: isDevice ? [] : mainIngredients,
+    keySpecs,
     ingredientCards: ingredients.map((ingredient) => ({
       name: ingredient.name,
       amount: ingredient.amount || "",
@@ -552,10 +564,10 @@ export const ProductsPage = ({ navigate, initialScanner = false }) => {
     <div className="min-h-screen bg-cream pb-28 slide-up">
       <section className="relative overflow-hidden mesh-warm noise border-b border-ink/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14 relative">
-          <div className="max-w-5xl">
+          <div className="w-full">
             <div>
-              <Badge color="teal">SwasthyaSathi</Badge>
-              <h1 className="serif text-4xl sm:text-5xl lg:text-6xl font-medium text-ink mt-4 mb-4 leading-tight">SwasthyaSathi Product Comparison</h1>
+              <Badge color="teal">HealthIQ</Badge>
+              <h1 className="serif text-4xl sm:text-5xl lg:text-6xl font-medium text-ink mt-4 mb-4 leading-tight">HealthIQ Product Comparison</h1>
               <p className="text-ink/65 text-lg leading-relaxed max-w-2xl">Compare health products by evidence, value, safety, transparency, and family suitability before you buy.</p>
               <div className="mt-7 space-y-4">
                 <div className="flex flex-col lg:flex-row gap-3">
@@ -571,7 +583,7 @@ export const ProductsPage = ({ navigate, initialScanner = false }) => {
                     </button>
                   </div>
                 </div>
-                <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1">
+                <div className="hide-scrollbar flex w-full gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
                   {categories.map(cat => <button key={cat.key} onClick={() => setCategory(cat.key)} className={(category === cat.key ? "bg-ink text-cream" : "bg-white/80 text-ink/65 border border-ink/10 hover:bg-aqua-light") + " flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"}><Icon name={cat.icon} size={15} />{cat.label}</button>)}
                 </div>
               </div>
@@ -586,7 +598,7 @@ export const ProductsPage = ({ navigate, initialScanner = false }) => {
         {currentUserId && <section className="mb-6 rounded-3xl bg-white border border-ink/8 shadow-glass p-5"><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4"><div><h2 className="serif text-2xl font-medium text-ink">Saved comparisons</h2><p className="text-sm text-ink/55">Reopen or remove product comparisons saved to your account.</p></div><Button variant="outline" size="sm" disabled={loadingSavedComparisons} onClick={() => loadSavedComparisons(currentUserId)}>{loadingSavedComparisons ? "Loading..." : "Refresh"}</Button></div>{savedComparisonsError && <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl p-3 mb-3">{savedComparisonsError}</div>}{loadingSavedComparisons ? <div className="text-sm text-ink/55">Loading saved comparisons...</div> : savedComparisons.length === 0 ? <div className="text-sm text-ink/55">No saved comparisons yet. Select two or more products and save your comparison.</div> : <div className="grid md:grid-cols-2 gap-3">{savedComparisons.map((comparison) => { const productSummaries = getSavedComparisonProductSummaries(comparison, products); return <div key={comparison.id} className="rounded-2xl border border-ink/8 bg-cream-warm/70 p-4"><div className="flex items-start justify-between gap-3 mb-3"><div><h3 className="font-semibold text-ink text-sm">{comparison.title || "Saved comparison"}</h3><p className="text-xs text-ink/40">{formatSavedComparisonDate(comparison.created_at)}</p></div><div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => viewSavedComparison(comparison)}>View</Button><Button variant="ghost" size="sm" disabled={deletingComparisonId === comparison.id} onClick={() => deleteSavedComparison(comparison.id)}>{deletingComparisonId === comparison.id ? "Deleting..." : "Delete"}</Button></div></div><div className="space-y-2">{productSummaries.length > 0 ? productSummaries.map((product) => { const scores = getProductScores(product); const summaryScore = Math.round((Number(scores[0].value || 0) + Number(scores[1].value || 0) + Number(scores[2].value || 0)) / 3); return <div key={product.id || product.name} className="rounded-xl bg-white/75 border border-ink/5 p-3"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-ink">{product.name || "Product unavailable"}</p><p className="text-xs text-ink/45">{product.brand || "Brand not listed"}</p></div>{product.verdict && <Badge color={product.verdictColor || "amber"}>{getProductVerdict(product)}</Badge>}</div><div className="mt-2 grid grid-cols-3 gap-2">{scores.slice(0, 3).map((score) => <div key={score.label}><div className="h-1 rounded-full bg-ink/10 overflow-hidden"><div className="h-full rounded-full bg-aqua-deep" style={{ width: `${Math.max(0, Math.min(100, Number(score.value) || 0))}%` }} /></div><p className="mt-1 text-[10px] text-ink/45">{score.label}</p></div>)}</div><p className="mt-2 text-[11px] text-ink/45">Core score: {Number.isFinite(summaryScore) ? summaryScore : "Not listed"}</p></div>; }) : <p className="text-sm text-ink/55">Products unavailable</p>}</div></div>; })}</div>}</section>}
 
         <div className="grid lg:grid-cols-[292px_1fr] gap-6 items-start">
-          <aside className="lg:sticky lg:top-24 space-y-4">
+          <aside className="space-y-4">
             <div className="rounded-3xl bg-white border border-ink/8 shadow-glass overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-ink/8">
                 <div>

@@ -5,7 +5,7 @@ export const LEGAL_DOCS = {
     updated: "May 17, 2026",
     summary: "How Meintourje Educorp LLP / CrossCheckHealth collects, uses, stores, discloses, transfers, and protects personal data under the DPDP Act.",
     sections: [
-      ["Introduction and scope", "Applies to the CrossCheckHealth website, apps, assessments, SwasthyaSathi, RaktaSetu, Parivar Health, subscriptions, dashboards, communications, and partner workflows."],
+      ["Introduction and scope", "Applies to the CrossCheckHealth website, apps, assessments, HealthIQ, Labwise, Parivar Health, subscriptions, dashboards, communications, and partner workflows."],
       ["Data fiduciary and contact", "Meintourje Educorp LLP is identified as the Data Fiduciary. Grievance Officer / Data Protection Contact details are to be published in the production deployment."],
       ["Personal data collected", "Account, contact, assessment, health-awareness, family profile, payment, device, usage, cookie, support, grievance, and consent records may be processed where needed."],
       ["Purposes and legal basis", "Processing is for account creation, assessments, dashboards, Parivar profiles, subscriptions, support, security, analytics, legal compliance, and consent management. Consent is the default legal basis unless a DPDP legitimate use applies."],
@@ -48,7 +48,7 @@ export const LEGAL_DOCS = {
       ["Consult a practitioner", "Always seek advice from a registered medical practitioner before starting supplements, changing treatment, or acting on health information."],
       ["Emergency", "The platform is not an emergency service. For chest pain, severe breathlessness, fainting, sudden weakness, or other urgent symptoms, call emergency services or go to a hospital."],
       ["Risk scores and tools", "Scores and outputs are awareness indicators only. They do not predict individual disease or replace clinical evaluation."],
-      ["Product and ingredient scanner", "SwasthyaSathi and product guidance are based on available information and may be incomplete, outdated, or affected by label changes."],
+      ["Product and ingredient scanner", "HealthIQ and product guidance are based on available information and may be incomplete, outdated, or affected by label changes."],
       ["No cure or prevention claims", "No content should be read as claiming to cure, prevent, treat, or mitigate any disease or condition."],
       ["Affiliate and sponsored content", "Affiliate or sponsored content must be disclosed and should not be treated as medical endorsement."],
       ["Acknowledgement", "Users acknowledge that they will not rely on the platform as a substitute for professional medical advice."],
