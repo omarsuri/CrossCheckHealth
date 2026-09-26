@@ -197,7 +197,7 @@ function AppShell({ initialPage = "/", initialParams }: { initialPage?: string; 
       case "/dashboard/parents": return <ParentProfilesPage navigate={navigate} user={user} />;
       case "/dashboard/parents/add": return <ParentProfilesPage navigate={navigate} user={user} />;
       case "/support": return <SupportPage navigate={navigate} />;
-      case "/privacy": return <PrivacyPage navigate={navigate} />;
+      case "/privacy-policy": return <PrivacyPage navigate={navigate} />;
       case "/terms": return <LegalDocumentPage docKey="terms" navigate={navigate} />;
       case "/disclaimer": return <DisclaimerPage navigate={navigate} />;
       case "/refunds": return <LegalDocumentPage docKey="refunds" navigate={navigate} />;

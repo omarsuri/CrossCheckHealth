@@ -26,15 +26,14 @@ export const Footer = ({ navigate }) => (
           <h4 className="font-semibold text-cream mb-4">Company</h4>
           <ul className="space-y-2 text-sm">
             <li><button onClick={() => navigate("/support")} className="hover:text-white transition-colors">Support</button></li>
-            <li><button onClick={() => navigate("/privacy")} className="hover:text-white transition-colors">Privacy</button></li>
             <li><button onClick={() => navigate("/disclaimer")} className="hover:text-white transition-colors">Disclaimer</button></li>
           </ul>
         </div>
         <div>
           <h4 className="font-semibold text-cream mb-4">Legal</h4>
           <ul className="space-y-2 text-sm">
-            <li><button onClick={() => navigate("/privacy")} className="hover:text-white transition-colors">Privacy Policy</button></li>
-            <li><button onClick={() => navigate("/terms")} className="hover:text-white transition-colors">Terms of Use</button></li>
+            <li><a href="/privacy-policy" className="inline-flex min-h-11 items-center hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aqua">Privacy Policy</a></li>
+            <li><a href="/terms" className="inline-flex min-h-11 items-center hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aqua">Terms of Use</a></li>
             <li><button onClick={() => navigate("/disclaimer")} className="hover:text-white transition-colors">Medical Disclaimer</button></li>
             <li><button onClick={() => navigate("/refunds")} className="hover:text-white transition-colors">Refunds</button></li>
             <li><button onClick={() => navigate("/grievance")} className="hover:text-white transition-colors">Grievance Redressal</button></li>

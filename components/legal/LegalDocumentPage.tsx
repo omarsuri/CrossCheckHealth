@@ -30,7 +30,7 @@ export const LegalDocumentPage = ({ docKey, navigate }) => {
       <div className="grid lg:grid-cols-[220px_1fr] gap-8">
         <aside className="lg:sticky lg:top-24 h-fit">
           <div className="bg-white rounded-2xl border border-ink/5 shadow-glass p-3">
-            {links.map(([key, label]) => <button key={key} onClick={() => navigate(key === "privacy" ? "/privacy" : key === "disclaimer" ? "/disclaimer" : "/" + key)} className={(docKey === key ? "bg-ink text-cream" : "text-ink/65 hover:bg-cream-warm") + " w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors"}>{label}</button>)}
+            {links.map(([key, label]) => <button key={key} onClick={() => navigate(key === "privacy" ? "/privacy-policy" : key === "disclaimer" ? "/disclaimer" : "/" + key)} className={(docKey === key ? "bg-ink text-cream" : "text-ink/65 hover:bg-cream-warm") + " w-full min-h-11 text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aqua-deep"}>{label}</button>)}
           </div>
         </aside>
         <div>
@@ -62,5 +62,4 @@ export const LegalDocumentPage = ({ docKey, navigate }) => {
 
 export const PrivacyPage = ({ navigate }) => <LegalDocumentPage docKey="privacy" navigate={navigate} />;
 export const DisclaimerPage = ({ navigate }) => <LegalDocumentPage docKey="disclaimer" navigate={navigate} />;
-
 

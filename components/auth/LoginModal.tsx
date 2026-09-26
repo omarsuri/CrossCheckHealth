@@ -150,7 +150,7 @@ export const LoginModal = ({ isOpen, onClose, onLogin, redirectPath }) => {
             </label>
             <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" checked={privacy} onChange={e => setPrivacy(e.target.checked)} className="mt-1" />
-              <span className="text-sm text-gray-600">I agree to the Privacy Policy, Terms of Use, Medical Disclaimer, Cookie Policy, and Refund & Cancellation Policy.</span>
+              <span className="text-sm text-gray-600">I agree to the <a href="/privacy-policy" className="font-medium text-teal-deep underline underline-offset-2 hover:text-charcoal" target="_blank" rel="noreferrer">Privacy Policy</a>, <a href="/terms" className="font-medium text-teal-deep underline underline-offset-2 hover:text-charcoal" target="_blank" rel="noreferrer">Terms of Use</a>, Medical Disclaimer, Cookie Policy, and Refund & Cancellation Policy.</span>
             </label>
           </div>
         )}
