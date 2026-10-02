@@ -198,7 +198,7 @@ all by writing to admin@crosscheckhealth.in.
 
 ## 11. Cookies and Tracking Technologies
 
-11.1 We use cookies and similar technologies. Details are set out in the separate **Cookie Policy** available at [●].
+11.1 We use cookies and similar technologies for purposes such as maintaining sessions, remembering preferences, security, and understanding Platform usage.
 
 11.2 You may withdraw cookie consent through the cookie banner or your browser settings. Disabling essential cookies may impair Platform functionality.
 
@@ -208,9 +208,9 @@ all by writing to admin@crosscheckhealth.in.
 
 ## 12. Affiliate and Sponsored Content
 
-12.1 Certain product links and comparison results may be **affiliate links**, in which case we may earn a referral fee at no additional cost to you. This is disclosed in the separate **Affiliate Disclosure** at [●].
+12.1 Certain product links and comparison results may be **affiliate links**, in which case we may earn a referral fee at no additional cost to you. Where applicable, the affiliate nature of such links or placements will be disclosed clearly to the User.
 
-12.2 Affiliate placements do **not** influence our scoring methodology, which is independently published at [●].
+12.2 Affiliate placements do **not** influence our scoring methodology.
 
 ---
 
@@ -252,4 +252,4 @@ You also have the right to lodge a complaint with the **Data Protection Board of
 
 ---
 
-*This Privacy Policy should be read together with the Terms of Use, Medical Disclaimer, Cookie Policy, Refund & Cancellation Policy, and Grievance Redressal Policy of CrossCheckHealth.*
+*This Privacy Policy should be read together with the Terms of Use. Additional policies may be published from time to time.*
