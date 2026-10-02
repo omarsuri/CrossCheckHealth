@@ -77,10 +77,18 @@ export default function ComingSoonPage() {
       </div>
 
       {/* Bottom bar */}
-      <div className="absolute bottom-0 inset-x-0 border-t border-white/[0.04] py-5 px-8 flex items-center justify-center z-10">
+      <div className="absolute bottom-0 inset-x-0 border-t border-white/[0.04] py-5 px-8 flex flex-wrap items-center justify-center gap-x-4 z-10">
         <p className="text-white/20 text-xs">
           © 2026 CrossCheckHealth. All rights reserved.
         </p>
+        <nav aria-label="Legal links" className="flex items-center gap-4 text-xs">
+          <a href="/privacy-policy" className="inline-flex min-h-11 items-center text-white/40 transition-colors duration-200 hover:text-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020817]">
+            Privacy Policy
+          </a>
+          <a href="/terms" className="inline-flex min-h-11 items-center text-white/40 transition-colors duration-200 hover:text-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020817]">
+            Terms of Use
+          </a>
+        </nav>
       </div>
     </main>
   )
