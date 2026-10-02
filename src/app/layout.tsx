@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
-import { Figtree } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 
-const figtree = Figtree({
+const figtree = localFont({
+  src: './fonts/Figtree-Latin.woff2',
   variable: '--font-sans',
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: '300 700',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
