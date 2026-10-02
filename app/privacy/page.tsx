@@ -1,6 +1,6 @@
-﻿import AppShell from "@/components/AppShell";
+﻿import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <AppShell initialPage="/privacy-policy" />;
+  redirect("/privacy-policy");
 }
 
