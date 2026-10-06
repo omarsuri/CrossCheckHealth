@@ -200,7 +200,7 @@ all by writing to admin@crosscheckhealth.in.
 
 11.1 We use cookies and similar technologies for purposes such as maintaining sessions, remembering preferences, security, and understanding Platform usage.
 
-11.2 You may withdraw cookie consent through the cookie banner or your browser settings. Disabling essential cookies may impair Platform functionality.
+11.2 You may manage cookies through your browser settings and, where a cookie consent or preferences tool is provided on the Platform, through that tool. Disabling essential cookies may impair Platform functionality.
 
 11.3 We do **not** engage in behavioural advertising or cross-site tracking on the Platform without your affirmative opt-in.
 
@@ -222,25 +222,41 @@ all by writing to admin@crosscheckhealth.in.
 
 ---
 
-## 14. Changes to this Policy
+## 14. Google API Services and Gmail Integration
 
-14.1 We may update this Policy from time to time. Material changes will be notified by email and through a prominent notice on the Platform at least **15 days** before they take effect.
+14.1 CrossCheckHealth may connect an authorised Google account using OAuth 2.0 for operational email functionality.
 
-14.2 Continued use of the Platform after the effective date constitutes acceptance of the updated Policy.
+14.2 Where Gmail integration is enabled, CrossCheckHealth requests the `https://www.googleapis.com/auth/gmail.send` permission solely to send email messages on behalf of the authorised CrossCheckHealth Google account through the Gmail API.
 
-14.3 Prior versions are archived and available on request.
+14.3 CrossCheckHealth does not use this permission to read the authorised account's inbox, email history, contacts, or other unrelated Google Account data.
 
----
+14.4 OAuth access tokens and refresh tokens may be securely stored and used only to maintain the authorised connection and perform the requested email-sending functionality. Google user data and OAuth credentials are not sold, used for advertising, or used to train generalized artificial intelligence or machine-learning models.
 
-## 15. Governing Law and Jurisdiction
+14.5 CrossCheckHealth's use and transfer of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.
 
-15.1 This Policy is governed by the laws of India.
-
-15.2 Subject to the dispute-resolution clause in the **Terms of Use**, courts at **Delhi** shall have exclusive jurisdiction.
+14.6 Access may be revoked at any time through the authorised user's Google Account security settings.
 
 ---
 
-## 16. Contact Us
+## 15. Changes to this Policy
+
+15.1 We may update this Policy from time to time. Material changes will be notified by email and through a prominent notice on the Platform at least **15 days** before they take effect.
+
+15.2 Continued use of the Platform after the effective date constitutes acceptance of the updated Policy.
+
+15.3 Prior versions are archived and available on request.
+
+---
+
+## 16. Governing Law and Jurisdiction
+
+16.1 This Policy is governed by the laws of India.
+
+16.2 Subject to the dispute-resolution clause in the **Terms of Use**, courts at **Delhi** shall have exclusive jurisdiction.
+
+---
+
+## 17. Contact Us
 
 For privacy-related questions, requests, or complaints:
 
